@@ -247,12 +247,3 @@ docker compose ps
 # 4. Trigger the ETL DAG in Airflow:
 docker compose exec airflow-webserver airflow dags trigger product_analytics_daily_etl
 ```
-
----
-
-## 🏛️ Engineering Design Highlights
-
-- **Scalability**: Decoupled Lakehouse storage (Parquet) with daily partition pruning and BRIN indexes in the warehouse.
-- **Data Integrity**: SCD Type-2 handling guarantees historical attribution accuracy for changing user demographics.
-- **Idempotency**: Strict partition overwrite patterns eliminate duplicate writes during Airflow pipeline retries.
-- **Quality SLAs**: Integrated freshness thresholds, schema validation, and row-count drift anomaly detection.
