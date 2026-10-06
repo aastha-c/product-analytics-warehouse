@@ -1,0 +1,101 @@
+version: '3.8'
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.8.2-python3.10
+  environment:
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/airflow_metadata
+    - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqBpGw=
+    - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+    - AIRFLOW_CONN_POSTGRES_WAREHOUSE=postgresql://postgres:postgres@postgres:5432/warehouse
+    - RAW_DATA_PATH=/opt/airflow/data/raw/events
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./data:/opt/airflow/data
+    - ./logs:/opt/airflow/logs
+    - ./warehouse:/opt/airflow/warehouse
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  # --------------------------------------------------------------------------
+  # 1. PostgreSQL (Dual Role: Airflow Meta DB + Product Analytics Data Warehouse)
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: meta_analytics_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=warehouse,airflow_metadata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./warehouse/schema:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  # 2. Airflow Webserver
+  # --------------------------------------------------------------------------
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: meta_analytics_airflow_webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: always
+
+  # --------------------------------------------------------------------------
+  # 3. Airflow Scheduler
+  # --------------------------------------------------------------------------
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: meta_analytics_airflow_scheduler
+    command: scheduler
+    restart: always
+
+  # --------------------------------------------------------------------------
+  # 4. Airflow Init (Runs db migrate and creates admin user)
+  # --------------------------------------------------------------------------
+  airflow-init:
+    <<: *airflow-common
+    container_name: meta_analytics_airflow_init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init &&
+        airflow users create \
+          --username admin \
+          --firstname Data \
+          --lastname Engineer \
+          --role Admin \
+          --email admin@meta.com \
+          --password admin
+    restart: on-failure
+
+  # --------------------------------------------------------------------------
+  # 5. Metabase (BI & Product Analytics Dashboard)
+  # --------------------------------------------------------------------------
+  metabase:
+    image: metabase/metabase:latest
+    container_name: meta_analytics_metabase
+    ports:
+      - "3000:3000"
+    environment:
+      - MB_DB_TYPE=h2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: raw_product_events
+    database: postgres
+    schema: staging
+    tables:
+      - name: stg_events
+        description: "Raw staged product telemetry events loaded from Parquet batches."
+        loaded_at_field: event_timestamp
+        freshness:
+          warn_after: {count: 12, period: hour}
+          error_after: {count: 24, period: hour}
+        columns:
+          - name: event_id
+            description: "Unique event identifier"
+            tests:
+              - not_null
+              - unique
+          - name: user_id
+            description: "User natural key"
+            tests:
+              - not_null
+          - name: event_type
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['signup', 'login', 'post', 'like', 'purchase']
+          - name: event_timestamp
+            tests:
+              - not_null
