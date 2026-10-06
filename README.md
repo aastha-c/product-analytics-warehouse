@@ -1,13 +1,12 @@
-# Meta Product Analytics Data Warehouse 🚀
+# Product Analytics Data Warehouse 🚀
 
-> **End-to-End Dimensional Data Warehouse, Incremental ETL, and Advanced Analytics Engine**  
-> *Designed for Meta Data Engineer Candidate Portfolio Demonstration*
+> **End-to-End Dimensional Data Warehouse, Incremental ETL, and Growth Analytics Engine**
 
 ---
 
 ## 📌 Executive Summary & Architecture
 
-This project implements a production-grade product analytics data warehouse modeled after modern big data architectures at Meta. It simulates **1,000,000+ granular product interaction telemetry events** (signups, logins, posts, likes, purchases) with power-law activity distribution, loads them via an **idempotent Apache Airflow DAG**, models them into a **Kimball Star Schema with Type-2 Slowly Changing Dimensions (SCD-2)**, and evaluates core North Star product metrics (DAU/MAU stickiness, cohort retention, conversion funnels, and power-user segmentation).
+This project implements a production-grade product analytics data warehouse modeled after modern distributed big data architectures. It simulates **1,000,000+ granular product interaction telemetry events** (signups, logins, posts, likes, purchases) with power-law activity distribution, loads them via an **idempotent Apache Airflow DAG**, models them into a **Kimball Star Schema with Type-2 Slowly Changing Dimensions (SCD-2)**, and evaluates core North Star product metrics (DAU/MAU stickiness, cohort retention, conversion funnels, and power-user segmentation).
 
 ```mermaid
 flowchart TD
@@ -145,7 +144,7 @@ User attributes (such as country relocation, operating platform switch, or tier 
 
 ---
 
-## ⚡ Indexing & Partitioning Strategy (Meta Scale Principles)
+## ⚡ Indexing & Partitioning Strategy (High-Throughput Principles)
 
 1. **Declarative Range Partitioning by Day**:
    - `fact_events` and `fact_orders` are partitioned on `event_date` and `order_date`.
@@ -175,7 +174,7 @@ If an upstream task fails or a backfill is triggered, re-running the DAG produce
 
 ### 1. DAU / MAU Stickiness Ratio
 - **Formula**: $\text{Stickiness} = \frac{\text{DAU}}{\text{MAU}} \times 100\%$
-- **Purpose**: Meta's benchmark for user habituation. Smooths day-of-week fluctuations using a 7-day trailing moving average window.
+- **Purpose**: Core industry engagement benchmark for product habituation. Smooths day-of-week fluctuations using a 7-day trailing moving average window.
 
 ### 2. User Retention Cohorts
 - **Granularity**: Day-1, Day-7, Day-14, and Day-30.
@@ -251,7 +250,7 @@ docker compose exec airflow-webserver airflow dags trigger product_analytics_dai
 
 ---
 
-## 🏆 Key Interview Takeaways for Meta DE Panel
+## 🏛️ Engineering Design Highlights
 
 - **Scalability**: Decoupled Lakehouse storage (Parquet) with daily partition pruning and BRIN indexes in the warehouse.
 - **Data Integrity**: SCD Type-2 handling guarantees historical attribution accuracy for changing user demographics.
